@@ -1,0 +1,212 @@
+﻿@model DatatableJquery.Models.PersonViewModel
+@{
+    Layout = null;
+}
+
+<script src="~/Scripts/jquery-3.3.1.min.js"></script>
+<script src="~/Scripts/jquery.validate.min.js"></script>
+<script src="~/Scripts/bootstrap.min.js"></script>
+<link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+<script src="~/Scripts/jquery-ui-1.12.1.min.js"></script>
+<link href="~/Content/themes/base/jquery-ui.min.css" rel="stylesheet" />
+<link href="~/Content/DataTables/css/jquery.dataTables.min.css" rel="stylesheet" />
+<script src="~/Scripts/DataTables/jquery.dataTables.min.js"></script>
+
+
+<div class="container" style="margin-top:3%">
+    <a href="#" class="btn btn-info" onclick="AddNewPerson(0)">Add New Person</a> <br /><br />
+
+    <table id="tblPerson"  class="table table-striped">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>First name</th>
+                <th>Last name</th>
+                <th>Birthday</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Company</th>
+                <th>Zipcode</th>
+                <th>Action(Edit)</th>
+                <th>Action(Delete)</th>
+
+            </tr>
+        </thead>
+        <tbody id="SetPersonList">
+            <tr id="LoadingStatus" style="color:red"></tr>
+        </tbody>
+    </table>
+
+    @*Create A Popup Modal With Registration Form For Add Or Edit Person Record*@
+
+    <div class="modal fade" id="MyModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <a href="#" class="close" data-dismiss="modal">&times;</a>
+                    <h4 id="ModalTitle"></h4>
+                </div>
+                <div class="modal-body">
+                    <form id="form">
+                        <fieldset id="SubmitForm">
+                            @Html.HiddenFor(m => m.Id, new { @id = "PersId" })
+                            <div class="form-group">
+                                @Html.TextBoxFor(m => m.firstname, new { @id = "Firstname", @class = "form-control", @placeholder = "Firstname*" })
+                                @Html.ValidationMessageFor(model => model.firstname)
+                            </div>
+                            <div class="form-group">
+                                @Html.TextBoxFor(m => m.lastname, new { @id = "Lastname", @class = "form-control", @placeholder = "Lastname*" })
+                                @Html.ValidationMessageFor(model => model.lastname)
+                            </div>
+                            <div class="form-group">
+                                @Html.TextBoxFor(m => m.birthday, new { @id = "Birthday", @class = "form-control", @placeholder = "Birthday*" })
+                                @Html.ValidationMessageFor(model => model.birthday)
+                            </div>
+                            <div class="form-group">
+                                @Html.TextBoxFor(m => m.email, new { @id = "Email", @class = "form-control", @placeholder = "Email*" })
+                                @Html.ValidationMessageFor(model => model.email)
+                            </div>
+                            <div class="form-group">
+                                @Html.TextBoxFor(m => m.phone, new { @id = "Phone", @class = "form-control", @placeholder = "Phone*" })
+                                @Html.ValidationMessageFor(model => model.phone)
+                            </div>
+                            <div class="form-group">
+                                @Html.TextBoxFor(m => m.company, new { @id = "Company", @class = "form-control", @placeholder = "Company*" })
+                                @Html.ValidationMessageFor(model => model.company)
+                            </div>
+                            <div class="form-group">
+                                @Html.TextBoxFor(m => m.zipcode, new { @id = "Zipcode", @class = "form-control", @placeholder = "Zipcode*" })
+                                @Html.ValidationMessageFor(model => model.zipcode)
+                            </div>
+                            <div class="form-group">
+                                <a href="#" class="btn btn-block btn-danger" id="SavePersonRecord">Save</a>
+                            </div>
+
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    @*Create A PopUp Modal For DeleteConfirmation*@
+    <div class="modal fade" id="DeleteConfirmation">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <a href="#" class="close" data-dismiss="modal">&times;</a>
+                    <h4>Delete Person Record</h4>
+                </div>
+                <div class="modal-body">
+                    <h4>Are You Sure? You Want To Delete This Record.</h4>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-primary" data-dismiss="modal" id="r">Cancel</a>
+                    <a href="#" class="btn btn-danger" onclick="ConfirmDelete()">Confirm</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+   
+
+    $(function () {
+        $('#Birthday').datepicker();
+    });
+    $("#LoadingStatus").html("Loading....");
+    $.get("/Person/GetPersonList", null, DataBind);
+    function DataBind(PersonList) {
+        var SetData = $("#SetPersonList");
+        for (var i = 0; i < PersonList.length; i++) {
+            var Data = "<tr class='row_" + PersonList[i].Id + "'>" +
+                "<td>" + PersonList[i].Id + "</td>" +
+                "<td>" + PersonList[i].firstname + "</td>" +
+                "<td>" + PersonList[i].lastname + "</td>" +
+                "<td>" + PersonList[i].birthday + "</td>" +
+                "<td>" + PersonList[i].email + "</td>" +
+                "<td>" + PersonList[i].phone + "</td>" +
+                "<td>" + PersonList[i].company + "</td>" +
+                "<td>" + PersonList[i].zipcode + "</td>" +
+                "<td>" + "<a href='#' class='btn btn-success' onclick='EditPersonRecord(" + PersonList[i].Id + ")' ><span class='glyphicon glyphicon-trash'>Edit</span></a>" + "</td>" +
+                "<td>" + "<a href='#' class='btn btn-danger' onclick='DeletePersonRecord(" + PersonList[i].Id + ")'><span class='glyphicon glyphicon-trash'>Delete</span></a>" + "</td>" +
+                "</tr>";
+            SetData.append(Data);
+            $("#LoadingStatus").html(" ");
+
+           
+
+        }
+    }
+
+    //Show The Popup Modal For Add New Person
+
+    function AddNewPerson(Id) {
+        $("#form")[0].reset();
+        $("#PersId").val(0);
+
+        $("#ModalTitle").html("Add New Person");
+        $("#MyModal").modal();
+
+    }
+    //Show The Popup Modal For Edit Person Record
+
+    function EditPersonRecord(Id) {
+        var url = "/Person/GetPersonById?Id=" + Id;
+        $("#ModalTitle").html("Update Person Record");
+        $("#MyModal").modal();
+        $.ajax({
+            type: "GET",
+            url: url,
+            success: function (data) {
+                var obj = JSON.parse(data);
+                $("#PersId").val(obj.Id);
+                $("#Firstname").val(obj.firstname);
+                $("#Lastname").val(obj.lastname);
+                $("#Birtday").val(obj.birthday);
+                $("#Email").val(obj.email);
+                $("#Phone").val(obj.phone);
+                $("#Company").val(obj.company);
+                $("#Zipcode").val(obj.zipcode);
+
+
+            }
+        })
+    }
+
+    $("#SavePersonRecord").click(function () {
+        var data = $("#SubmitForm").serialize();
+        $.ajax({
+            type: "Post",
+            url: "/Person/SaveDataInDatabase",
+            data: data,
+            success: function (result) {
+                alert("Success!..");
+                window.location.href = "/Person/index";
+                $("#MyModal").modal("hide");
+
+            }
+        })
+    })
+
+
+
+
+
+    //Show The Popup Modal For DeleteComfirmation
+    var DeletePersonRecord = function (Id) {
+        $("#PersId").val(Id);
+        $("#DeleteConfirmation").modal("show");
+    }
+    var ConfirmDelete = function () {
+        var PersId = $("#PersId").val();
+        $.ajax({
+            type: "POST",
+            url: "/Person/DeletePersonRecord?Id=" + PersId,
+            success: function (result) {
+                $("#DeleteConfirmation").modal("hide");
+                $(".row_" + PersId).remove();
+            }
+        })
+    }
+
+</script>
